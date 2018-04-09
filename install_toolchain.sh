@@ -23,11 +23,8 @@ if [ ! -d $TOOLS/gcc-linaro-aarch ]; then
 	echo -e "\e[1;31m Uncompress toolchain.. \e[0m"
 	cat ${TOOLTARXZ}* > ${TOOLTAR}
 
-	tar xzvf $TOOLTAR -C $TOOLS 
+	tar xzf $TOOLTAR -C $TOOLS 
 	rm -rf $TOOLTAR 
-    mv $TOOLS/toolchain/gcc-linaro-aarch $TOOLS
-    rm -rf $TOOLS/toolchain
-#	rm -rf $TOOLS/gcc-linaro-aarch/gcc-linaro
 fi
 
 if [ -d $ROOT/toolchain/gcc-linaro-aarch/gcc-linaro/arm-linux-gnueabihf ]; then
@@ -37,10 +34,9 @@ fi
 if [ ! -d $TOOLS/gcc-linaro-aarch/gcc-linaro/arm-linux-gnueabi ]; then
 	cat ${UBOOTTARXZ}* > ${UBOOTTAR}
 
-	tar xzvf $UBOOTTAR -C $UBOOTS
+	tar xzf $UBOOTTAR -C $UBOOTS
 	rm -rf $UBOOTTAR 
+        rm -rf $TOOLS/toolchain_tar
 fi
 
 whiptail --title "OrangePi Build System" --msgbox "Cross-Tools has installed." 10 40 0
-
-
