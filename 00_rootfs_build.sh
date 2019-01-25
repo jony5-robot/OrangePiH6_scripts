@@ -360,7 +360,7 @@ EOF
 		chmod +x "$DEST/second-phase"
 		do_chroot /second-phase
 
-if [ $TYPE = "1" && $DISTRO="xenial" ]; then
+if [ $TYPE = "1" -a $DISTRO="xenial" ]; then
                 cat > "$DEST/type-phase" <<EOF
 #!/bin/sh
 apt-get -y install xubuntu-desktop vlc
@@ -372,7 +372,7 @@ EOF
                 do_chroot /type-phase
 fi
 
-if [ $TYPE = "1" && $DISTRO="jessie" ]; then
+if [ $TYPE = "1" -a $DISTRO="jessie" ]; then
                 cat > "$DEST/type-phase" <<EOF
 #!/bin/sh
 apt-get -y install xfce4 xfce4-goodies task-xfce-desktop
