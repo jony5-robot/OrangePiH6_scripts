@@ -85,9 +85,11 @@ if [ $BUILD_KERNEL = "1" ]; then
 	########
 	# Update DTB with uboot
 	echo -e "\e[1;31m Cover sys_config.fex to DTS \e[0m"
-	cd $ROOT/scripts/pack/
-	./pack
-	cd -
+	if [ -f $BUILD/uboot.bin ]; then
+		cd $ROOT/scripts/pack/
+		./pack
+		cd -
+	fi
 
 	# Perpare uImage
 	mkimage -A arm -n "OrangePiH6" -O linux -T kernel -C none -a 0x40080000 -e 0x40080000 \
