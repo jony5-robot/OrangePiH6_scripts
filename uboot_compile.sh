@@ -11,7 +11,7 @@ if [ -z $ROOT ]; then
 fi
 # PLATFORM.
 if [ -z $PLATFORM ]; then
-	PLATFORM="OrangePiH6_OnePlus"
+	PLATFORM="OnePlus"
 fi
 # Uboot direct
 UBOOT=$ROOT/uboot
@@ -40,7 +40,7 @@ echo "Compile U-boot......"
 if [ ! -f $UBOOT/u-boot-sun50iw6p1.bin ]; then
 	make  sun50iw6p1_config
 fi
-make -j${CORES}
+make -j8
 echo "Complete compile...."
 
 echo "Compile boot0......"
@@ -67,6 +67,7 @@ if [ ! -f $DTC_COMPILER ]; then
 		10 60 0 --cancel-button Exit
 else
 	cd $ROOT/scripts/pack/
+	chmod 777 pack
 	./pack
 
 	###
@@ -74,7 +75,7 @@ else
 	cp $ROOT/output/pack/out/boot0_sdcard.fex $ROOT/output/boot0.bin
 	cp $ROOT/output/pack/out/boot_package.fex $ROOT/output/uboot.bin
 
-	rm -rf $ROOT/output/pack
+	#rm -rf $ROOT/output/pack
 
 	# Change to scripts direct.
 	cd -

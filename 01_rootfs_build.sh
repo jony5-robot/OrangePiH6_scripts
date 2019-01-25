@@ -10,9 +10,15 @@ if [ -z $ROOT ]; then
 fi
 
 if [ -z $1 ]; then
-	DISTRO="jessie"
+	DISTRO="xenial"
 else
 	DISTRO=$1
+fi
+
+if [ -z $2 ]; then
+	TYPE="server"
+else
+	TYPE=$2
 fi
 
 BUILD="$ROOT/external"
@@ -28,10 +34,18 @@ LINUX=$(readlink -f "$LINUX")
 # Install Kernel modules
 make -C $LINUX ARCH=arm64 CROSS_COMPILE=$TOOLCHAIN modules_install INSTALL_MOD_PATH="$DEST"
 
-#Install mali driver
-#MALI_MOD_DIR_REL=lib/modules/`cat $LINUX/include/config/kernel.release 2> /dev/null`/kernel/drivers/gpu
-#install -d "$DEST"/"$MALI_MOD_DIR_REL"
-#cp "$OUTPUT"/"$MALI_MOD_DIR_REL"/mali.ko "$DEST"/"$MALI_MOD_DIR_REL"
+# Install Kernel headers
+make -C $LINUX ARCH=arm64 CROSS_COMPILE=$TOOLCHAIN headers_install INSTALL_HDR_PATH="$DEST/usr"
 
 # Install Kernel firmware
 make -C $LINUX ARCH=arm64 CROSS_COMPILE=$TOOLCHAIN firmware_install INSTALL_MOD_PATH="$DEST"
+
+cp -rfa $BUILD/ap6255 $DEST/lib/firmware/
+cp -rfa $BUILD/ap6256 $DEST/lib/firmware/
+
+# Backup
+cp -rfa $DEST $OUTPUT/${DISTRO}_rootfs_$TYPE
+
+clear
+whiptail --title "OrangePi Build System" \
+        --msgbox "Build Rootfs Ok. The path of output: $DEST" 10 50 0

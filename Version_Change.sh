@@ -9,7 +9,7 @@ if [ -z $ROOT ]; then
 fi
 
 if [ -z $1 ]; then
-	PLATFORM="OrangePiH6_OnePlus"
+	PLATFORM="OnePlus"
 else
 	PLATFORM=$1
 fi
@@ -17,19 +17,19 @@ fi
 VERSION=$ROOT/scripts/version
 # Create Version state file
 if [ ! -f $VERSION ]; then
-	echo "$PLATFORM" > $VERSION
+	echo "OrangePiH6_$PLATFORM" > $VERSION
 fi
 OLD_PLATFORM=`cat $VERSION`
 ./Version_check.sh "$OLD_PLATFORM"
 
-if [ $PLATFORM = $OLD_PLATFORM ]; then
+if [ OrangePiH6_$PLATFORM = $OLD_PLATFORM ]; then
 	exit 0
 else
 	rm -f $ROOT/external/sys_config.fex
 	rm -f $ROOT/kernel/.config
 	rm -f $ROOT/uboot/include/configs/sun50iw6p1.h
 
-	./Version_check.sh "$PLATFORM"
+	./Version_check.sh "OrangePiH6_$PLATFORM"
 
-	echo "$PLATFORM" > $VERSION
+	echo "OrangePiH6_$PLATFORM" > $VERSION
 fi 

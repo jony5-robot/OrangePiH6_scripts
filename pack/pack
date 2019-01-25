@@ -163,7 +163,8 @@ function do_common()
 	cp -f board_config.bin board.fex
 	busybox unix2dos sys_partition.fex
 	script  sys_partition.fex > /dev/null
-
+	
+	
 	if [ "x${PACK_PLATFORM}" = "xdragonboard" ] ; then
 		busybox dos2unix test_config.fex
 		cp test_config.fex boot-resource/
@@ -205,6 +206,7 @@ function do_common()
 	        fi
 		cp boot_package.fex boot_package_nor.fex
 	fi
+
 	# for Nand/emmc board
 	if [ -f boot_package.cfg ]; then
 		echo "pack boot package"
@@ -227,6 +229,7 @@ function do_common()
 	else
 		echo "used multi config"
 	fi
+
 	# Copy dtb
 	cp $ROOT/output/pack/out/sunxi.fex $ROOT/output/OrangePiH6.dtb
 

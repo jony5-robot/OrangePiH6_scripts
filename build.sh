@@ -100,16 +100,17 @@ MENUSTR="Welcome to OrangePi Build System. Pls choose Platform."
 ##########################################
 OPTION=$(whiptail --title "OrangePi H6 Build System" \
 	--menu "$MENUSTR" 10 60 3 --cancel-button Exit --ok-button Select \
-	"0"  "OrangePi One_Plus" \
-	"1"  "OrangePi Lite_2" \
+	"0"  "OrangePi 3" \
+	"1"  "OrangePi Lite2" \
+	"2"  "OrangePi OnePlus" \
 	3>&1 1>&2 2>&3)
 
 if [ $OPTION = "0" ]; then
-	export PLATFORM="OrangePiH6_OnePlus"
+	export PLATFORM="3"
 elif [ $OPTION = "1" ]; then
-	export PLATFORM="OrangePiH6_Lite2"
+	export PLATFORM="Lite2"
 elif [ $OPTION = "2" ]; then
-	export PLATFORM="OrangePiH6_3"
+	export PLATFORM="OnePlus"
 else
 	echo -e "\e[1;31m Pls select correct platform \e[0m"
 	exit 0
@@ -167,6 +168,7 @@ MENUSTR="Pls select build option"
 
 OPTION=$(whiptail --title "OrangePi Build System" \
 	--menu "$MENUSTR" 20 60 12 --cancel-button Finish --ok-button Select \
+	"0"   "Build Release Image" \
 	"1"   "Build Uboot" \
 	"2"   "Build Linux" \
 	"3"   "Update kernel Image" \
@@ -174,21 +176,23 @@ OPTION=$(whiptail --title "OrangePi Build System" \
 	"5"   "Update Uboot" \
 	3>&1 1>&2 2>&3)
 
-if [ $OPTION = "10" -o $OPTION = "10" ]; then
+if [ $OPTION = "0" -o $OPTION = "0" ]; then
 	sudo echo ""
 	clear
 	TMP=$OPTION
 	TMP_DISTRO=""
 	MENUSTR="Distro Options"
 	OPTION=$(whiptail --title "OrangePi Build System" \
-		--menu "$MENUSTR" 20 60 5 --cancel-button Finish --ok-button Select \
-		"0"   "ArchLinux" \
-		"1"   "Ubuntu Xenial" \
-		"2"	  "Debian Sid" \
-		"3"   "Debian Jessie" \
-		"4"   "CentOS" \
+		--menu "$MENUSTR" 20 60 3 --cancel-button Finish --ok-button Select \
+		"0"   "Ubuntu Xenial" \
+		"1"   "Debian Jessie" \
 		3>&1 1>&2 2>&3)
 
+        TYPE=$(whiptail --title "OrangePi Build System" \
+                --menu "$MENUSTR" 20 60 3 --cancel-button Finish --ok-button Select \
+                "0"   "Server" \
+                "1"   "Desktop" \
+                3>&1 1>&2 2>&3)
 	if [ ! -f $ROOT/output/uImage ]; then
 		export BUILD_KERNEL=1
 		cd $SCRIPTS
@@ -212,27 +216,27 @@ if [ $OPTION = "10" -o $OPTION = "10" ]; then
 	fi
 
 	if [ $OPTION = "0" ]; then
-		TMP_DISTRO="arch"
-	elif [ $OPTION = "1" ]; then
-		TMP_DISTRO="xenial"	
-	elif [ $OPTION = "2" ]; then
-		TMP_DISTRO="sid"
-	elif [ $OPTION = "3" ]; then
-		TMP_DISTRO="jessie"
-	elif [ $OPTION = "4" ]; then
-		TMP_DISTRO="centos"
+		TMP_DISTRO="xenial"
+        elif [ $OPTION = "1" ]; then
+                TMP_DISTRO="jessie"
+        fi
+
+	if [ $TYPE = "0" ]; then
+		TMP_TYPE="server"
+	elif [ $TYPE = "1" ]; then
+		TMP_TYPE="desktop"
 	fi
 	cd $SCRIPTS
 	DISTRO=$TMP_DISTRO
-	if [ -d $ROOT/output/${DISTRO}_rootfs ]; then
-		if (whiptail --title "OrangePi Build System" --yesno \
-			"${DISTRO} rootfs has exist! Do you want use it?" 10 60) then
-			OP_ROOTFS=0
-		else
-			OP_ROOTFS=1
-		fi
-		if [ $OP_ROOTFS = "0" ]; then
-			sudo cp -rf $ROOT/output/${DISTRO}_rootfs $ROOT/output/tmp
+        if [ -d $ROOT/output/${DISTRO}_rootfs_$TMP_TYPE ]; then
+                if (whiptail --title "OrangePi Build System" --yesno \
+                        "${DISTRO} rootfs has exist! Do you want use it?" 10 60) then
+                        OP_ROOTFS=0
+                else
+                        OP_ROOTFS=1
+                fi
+                if [ $OP_ROOTFS = "0" ]; then
+                        sudo cp -rf $ROOT/output/${DISTRO}_rootfs_$TMP_TYPE $ROOT/output/tmp
 			if [ -d $ROOT/output/rootfs ]; then
 				sudo rm -rf $ROOT/output/rootfs
 			fi
@@ -240,22 +244,23 @@ if [ $OPTION = "10" -o $OPTION = "10" ]; then
 			whiptail --title "OrangePi Build System" --msgbox "Rootfs has build" \
 				10 40 0	--ok-button Continue
 		else
-			sudo ./00_rootfs_build.sh $DISTRO
-			sudo ./01_rootfs_build.sh $DISTRO
-			sudo ./02_rootfs_build.sh $DISTRO
-			sudo ./03_rootfs_build.sh $DISTRO
-
+			sudo rm -rf $ROOT/output/${DISTRO}_rootfs_$TMP_TYPE
+			export DISTRO=$DISTRO
+			export PLATFORM=$PLATFORM
+                        sudo ./00_rootfs_build.sh $DISTRO $PLATFORM $TYPE
+                        sudo ./01_rootfs_build.sh $DISTRO $TMP_TYPE
 		fi
 	else
-		sudo ./00_rootfs_build.sh $DISTRO
-		sudo ./01_rootfs_build.sh $DISTRO
-		sudo ./02_rootfs_build.sh $DISTRO
-		sudo ./03_rootfs_build.sh $DISTRO
+		sudo rm -rf $ROOT/output/${DISTRO}_rootfs_$TMP_TYPE
+		export DISTRO=$DISTRO
+		export PLATFORM=$PLATFORM
+                sudo ./00_rootfs_build.sh $DISTRO $PLATFORM $TYPE
+                sudo ./01_rootfs_build.sh $DISTRO $TMP_TYPE
 	fi
 	if [ $TMP = "0" ]; then 
-		sudo ./build_image.sh $PLATFORM
-		whiptail --title "OrangePi Build System" --msgbox "Succeed to build Image" \
-				10 40 0	--ok-button Continue
+                sudo ./build_image.sh $DISTRO $PLATFORM $TYPE
+                whiptail --title "OrangePi Build System" --msgbox "Succeed to build Image" \
+                                10 40 0 --ok-button Continue
 	fi
 	exit 0
 elif [ $OPTION = "1" ]; then
@@ -267,7 +272,7 @@ elif [ $OPTION = "2" ]; then
 	export BUILD_KERNEL=1
 	export BUILD_MODULE=1
 	cd $SCRIPTS
-	./kernel_compile.sh
+	./kernel_compile.sh $PLATFORM
 	clear
 	exit 0
 elif [ $OPTION = "10" ]; then
@@ -298,7 +303,7 @@ elif [ $OPTION = '3' ]; then
 	BOOT_check
 	clear
 	cd $SCRIPTS
-	sudo ./kernel_update.sh $BOOT_PATH
+	sudo ./kernel_update.sh $BOOT_PATH $PLATFORM
 	exit 0
 elif [ $OPTION = '4' ]; then
 	sudo echo ""

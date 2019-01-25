@@ -10,7 +10,7 @@ if [ -z $ROOT ]; then
 fi
 # Platform
 if [ -z $PLATFORM ]; then
-	PLATFORM="OrangePiH6_OnePlus"
+	PLATFORM="OnePlus"
 fi
 # Cleanup
 if [ -z $CLEANUP ]; then
@@ -52,7 +52,7 @@ if [ $CLEANUP = "1" ]; then
 fi
 
 if [ ! -f $LINUX/.config ]; then
-	make -C $LINUX ARCH=arm64 CROSS_COMPILE=$TOOLS ${PLATFORM}_linux_defconfig
+	make -C $LINUX ARCH=arm64 CROSS_COMPILE=$TOOLS OrangePiH6_${PLATFORM}_linux_defconfig
 	echo -e "\e[1;31m Using ${PLATFROM}_linux_defconfig \e[0m"
 fi
 
@@ -71,26 +71,17 @@ if [ $BUILD_MODULE = "1" ]; then
 	if [ ! -d $BUILD/lib ]; then
 		mkdir -p $BUILD/lib
 	fi 
-	#make -C ${LINUX}/modules/gpu ARCH=arm64 CROSS_COMPILE=$TOOLS LICHEE_KDIR=${LINUX} LICHEE_MOD_DIR=$BUILD/lib LICHEE_PLATFORM=linux
-	#echo -e "\e[1;31m Build Mali450 succeed \e[0m"
 
 	# install module
 	echo -e "\e[1;31m Start Install Module \e[0m"
 	make -C $LINUX ARCH=arm64 CROSS_COMPILE=$TOOLS -j${CORES} modules_install INSTALL_MOD_PATH=$BUILD
-	# Install mali driver
-	#MALI_MOD_DIR=$BUILD/lib/modules/`cat $LINUX/include/config/kernel.release 2> /dev/null`/kernel/drivers/gpu
-	#install -d $MALI_MOD_DIR
-	#mv ${BUILD}/lib/mali.ko $MALI_MOD_DIR
 fi
 
 if [ $BUILD_KERNEL = "1" ]; then
 	# compile dts
 	echo -e "\e[1;31m Start Compile DTS \e[0m"
 	make -C $LINUX ARCH=arm64 CROSS_COMPILE=$TOOLS -j${CORES} dtbs
-	#$ROOT/kernel/scripts/dtc/dtc -Odtb -o "$BUILD/OrangePiH6.dtb" "$LINUX/arch/arm64/boot/dts/${PLATFORM}.dts"
-	## DTB conver to DTS
-	# Command:
-	# dtc -I dtb -O dts -o target_file.dts source_file.dtb
+
 	########
 	# Update DTB with uboot
 	echo -e "\e[1;31m Cover sys_config.fex to DTS \e[0m"
@@ -108,6 +99,7 @@ cat <<EOF > "$BUILD/uEnv.txt"
 console=tty0 console=ttyS0,115200n8 no_console_suspend
 kernel_filename=orangepi/uImage
 initrd_filename=initrd.img
+root=/dev/mmcblk1p2
 EOF
 
 	## Build initrd.img

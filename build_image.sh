@@ -11,16 +11,35 @@ if [ -z $ROOT ]; then
 fi
 
 if [ -z $1 ]; then
-	PLATFORM="OrangePiH6_OnePlus"
+	DISTRO="xineal"
 else
-	PLATFORM=$1
+	DISTRO=$1
+fi
+
+if [ -z $2 ]; then
+	PLATFORM="3"
+else
+	PLATFORM=$2
+fi
+
+if [ $3 = "1" ]; then
+	IMAGETYPE="desktop"
+	disk_size="3800"
+else
+	IMAGETYPE="server"
+	disk_size="1200"
 fi
 
 BUILD="$ROOT/external"
 OUTPUT="$ROOT/output"
-IMAGE="$OUTPUT/${PLATFORM}.img"
+VER="v1.0"
+IMAGENAME="OrangePi_${PLATFORM}_${DISTRO}_${IMAGETYPE}_${VER}.img"
+IMAGE="$OUTPUT/images/$IMAGENAME"
 ROOTFS="$OUTPUT/rootfs"
-disk_size="1200"
+
+if [ ! -d $OUTPUT/images ]; then
+        mkdir -p $OUTPUT/images
+fi
 
 if [ -z "$disk_size" ]; then
 	disk_size=100 #MiB
@@ -114,6 +133,12 @@ t
 83
 w
 EOF
+
+cd $OUTPUT/images/ 
+rm -rf ${IMAGENAME}.tar.gz
+md5sum ${IMAGENAME} > ${IMAGENAME}.md5sum
+tar czvf  ${IMAGENAME}.tar.gz $IMAGENAME*
+rm -f ${IMAGENAME}.md5sum
 
 sync
 clear

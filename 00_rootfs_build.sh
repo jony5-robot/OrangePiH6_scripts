@@ -1,18 +1,32 @@
 #!/bin/bash
+
 set -e
 ########################################################################
 ##
 ##
 ## Build rootfs
 ########################################################################
+
 if [ -z $ROOT ]; then
 	ROOT=`cd .. && pwd`
 fi
 
 if [ -z $1 ]; then
-	DISTRO="jessie"
+	DISTRO="xenial"
 else
 	DISTRO=$1
+fi
+
+if [ -z $2 ]; then
+	PLATFORM="3"
+else
+	PLATFORM=$2
+fi
+
+if [ -z $3 ]; then
+	TYPE=0
+else
+	TYPE=$3
 fi
 
 BUILD="$ROOT/external"
@@ -20,7 +34,6 @@ OUTPUT="$ROOT/output"
 DEST="$OUTPUT/rootfs"
 LINUX="$ROOT/kernel"
 SCRIPTS="$ROOT/scripts"
-TOOLCHAIN="$ROOT/toolchain/gcc-linaro-aarch/bin/aarch64-linux-gnu-"
 
 if [ -z "$DEST" -o -z "$LINUX" ]; then
 	echo "Usage: $0 <destination-folder> <linux-folder> [distro] $DEST"
@@ -70,54 +83,71 @@ UNTAR="bsdtar -xpf"
 METHOD="download"
 
 case $DISTRO in
-	arch)
-		ROOTFS="http://archlinuxarm.org/os/ArchLinuxARM-aarch64-latest.tar.gz"
-		;;
 	xenial)
-		ROOTFS="http://cdimage.ubuntu.com/ubuntu-base/xenial/daily/current/xenial-base-arm64.tar.gz"
+		ROOTFS="http://cdimage.ubuntu.com/ubuntu-base/releases/16.04/release/ubuntu-base-16.04.5-base-arm64.tar.gz"
 		;;
-	sid|jessie)
-		ROOTFS="${DISTRO}-base-arm64.tar.gz"
-		METHOD="debootstrap"
-		;;
+	jessie|stretch)
+                ROOTFS="${DISTRO}-base-arm64.tar.gz"
+                METHOD="debootstrap"
+                ;;
 	*)
 		echo "Unknown distribution: $DISTRO"
 		exit 1
 		;;
 esac
 
-deboostrap_rootfs() {
-	dist="$1"
-	tgz="$(readlink -f "$2")"
-
-	[ "$TEMP" ] || exit 1
-	cd $TEMP && pwd
-
-	# this is updated very seldom, so is ok to hardcode
-	debian_archive_keyring_deb='http://httpredir.debian.org/debian/pool/main/d/debian-archive-keyring/debian-archive-keyring_2014.3_all.deb'
-	wget -O keyring.deb "$debian_archive_keyring_deb"
-	ar -x keyring.deb && rm -f control.tar.gz debian-binary && rm -f keyring.deb
-	DATA=$(ls data.tar.*) && compress=${DATA#data.tar.}
-
-	KR=debian-archive-keyring.gpg
-	bsdtar --include ./usr/share/keyrings/$KR --strip-components 4 -xvf "$DATA"
-	rm -f "$DATA"
-
-	apt-get -y install debootstrap qemu-user-static
-
-	qemu-debootstrap --arch=arm64 --keyring=$TEMP/$KR $dist rootfs http://httpredir.debian.org/debian
-	rm -f $KR
-
-	# keeping things clean as this is copied later again
-	rm -f rootfs/usr/bin/qemu-aarch64-static
-
-	bsdtar -C $TEMP/rootfs -a -cf $tgz .
-	rm -fr $TEMP/rootfs
-
-	cd -
-
+install_readonly() {
+  # Install file with user read-only permissions
+  install -o root -g root -m 644 $*
 }
 
+deboostrap_rootfs() {
+        dist="$1"
+        tgz="$(readlink -f "$2")"
+
+        ARCH="arm64"
+        EXCLUDE="--exclude=init,systemd-sysv"
+        EXTR="--keep-debootstrap-dir"
+        RELEASE=jessie
+        APT_SERVER=mirrors.ustc.edu.cn
+        APT_INCLUDES="--include=apt-transport-https,apt-utils,ca-certificates,debian-archive-keyring,dialog,sudo,systemd,sysvinit-utils,parted,dbus,openssh-server,alsa-utils,rng-tools,locales"
+        QEMU_BINARY="/usr/bin/qemu-aarch64-static"
+
+        [ "$TEMP" ] || exit 1
+        cd $TEMP && pwd
+
+        # Base debootstrap (unpack only)
+        echo -e "\e[1;31m Start debootstrap first stage.....\e[0m"
+        debootstrap ${EXCLUDE} ${APT_INCLUDES} --arch=${ARCH} --foreign --verbose ${RELEASE} rootfs https://${APT_SERVER}/debian/
+
+        # Copy qemu emulator binary to chroot
+        echo -e "\e[1;31m Copy qemu emulator binary to rootfs.....\e[0m"
+        install -m 755 -o root -g root "${QEMU_BINARY}" "rootfs/${QEMU_BINARY}"
+
+        # Copy debian-archive-keyring.pgp
+        echo -e "\e[1;31m Copy debian-archive-keyring.....\e[0m"
+        mkdir -p "rootfs/usr/share/keyrings"
+        install_readonly /usr/share/keyrings/debian-archive-keyring.gpg "rootfs/usr/share/keyrings/debian-archive-keyring.gpg"
+
+        # Complete the bootstrapping process
+        echo -e "\e[1;31m Start debootstrap second stage.....\e[0m"
+
+        chroot rootfs mount -t proc proc /proc || true
+        chroot rootfs mount -t sysfs sys /sys || true
+        chroot rootfs /debootstrap/debootstrap --second-stage
+        chroot rootfs umount /sys || true
+        chroot rootfs umount /proc || true
+
+        #do_chroot /debootstrap/debootstrap --second-stage
+
+        # keeping things clean as this is copied later again
+        rm -f rootfs/usr/bin/qemu-aarch64-static
+
+        bsdtar -C $TEMP/rootfs -a -cf $tgz .
+        rm -fr $TEMP/rootfs
+
+        cd -
+}
 
 TARBALL="$BUILD/$(basename $ROOTFS)"
 if [ ! -e "$TARBALL" ]; then
@@ -163,6 +193,16 @@ add_platform_scripts() {
 	cp -av ./platform-scripts/* "$DEST/usr/local/sbin"
 	chown root.root "$DEST/usr/local/sbin/"*
 	chmod 755 "$DEST/usr/local/sbin/"*
+}
+
+do_conffile() {
+        cp $BUILD/sshd_config $DEST/etc/ssh/ -f
+        cp $BUILD/profile $DEST/root/.profile -f
+        cp $BUILD/OrangePi_install2EMMC.sh $DEST/usr/local/sbin/ -f
+        cp $BUILD/resize_rootfs.sh $DEST/usr/local/sbin/ -f
+        chmod +x $DEST/usr/local/sbin/*
+	cp $BUILD/modules.conf_$PLATFORM $DEST/etc/modules-load.d/modules.conf
+        cp $BUILD/boot $DEST/opt/ -rf
 }
 
 add_mackeeper_service() {
@@ -235,16 +275,14 @@ add_debian_apt_sources() {
 	local release="$1"
 	local aptsrcfile="$DEST/etc/apt/sources.list"
 	cat > "$aptsrcfile" <<EOF
-deb http://httpredir.debian.org/debian ${release} main contrib non-free
-#deb-src http://httpredir.debian.org/debian ${release} main contrib non-free
-EOF
-	# No separate security or updates repo for unstable/sid
-	[ "$release" = "sid" ] || cat >> "$aptsrcfile" <<EOF
-deb http://httpredir.debian.org/debian ${release}-updates main contrib non-free
-#deb-src http://httpredir.debian.org/debian ${release}-updates main contrib non-free
+deb https://mirrors.ustc.edu.cn/debian/ ${release} main contrib non-free
+#deb-src https://mirrors.ustc.edu.cn/debian/ ${release} main contrib non-free
 
-deb http://security.debian.org/ ${release}/updates main contrib non-free
-#deb-src http://security.debian.org/ ${release}/updates main contrib non-free
+deb https://mirrors.ustc.edu.cn/debian/ ${release}-updates main contrib non-free
+#deb-src https://mirrors.ustc.edu.cn/debian/ ${release}-updates main contrib non-free
+
+deb https://mirrors.ustc.edu.cn/debian/ ${release}-backports main contrib non-free
+#deb-src https://mirrors.ustc.edu.cn/debian/ ${release}-backports main contrib non-free
 EOF
 }
 
@@ -272,32 +310,18 @@ add_asound_state() {
 
 # Run stuff in new system.
 case $DISTRO in
-	arch)
-		# Cleanup preinstalled Kernel
-		mv "$DEST/etc/resolv.conf" "$DEST/etc/resolv.conf.dist"
-		cp /etc/resolv.conf "$DEST/etc/resolv.conf"
-		sed -i 's|CheckSpace|#CheckSpace|' "$DEST/etc/pacman.conf"
-		do_chroot pacman -Rsn --noconfirm linux-aarch64 || true
-		do_chroot pacman -Sy --noconfirm --needed dosfstools curl xz iw rfkill netctl dialog wpa_supplicant alsa-utils || true
-		add_platform_scripts
-		add_mackeeper_service
-		add_corekeeper_service
-		add_disp_udev_rules
-		add_asound_state
-		rm -f "$DEST/etc/resolv.conf"
-		mv "$DEST/etc/resolv.conf.dist" "$DEST/etc/resolv.conf"
-		sed -i 's|#CheckSpace|CheckSpace|' "$DEST/etc/pacman.conf"
-		;;
-	xenial|sid|jessie)
+
+	xenial|jessie|stretch)
 		rm "$DEST/etc/resolv.conf"
 		cp /etc/resolv.conf "$DEST/etc/resolv.conf"
 		if [ "$DISTRO" = "xenial" ]; then
 			DEB=ubuntu
 			DEBUSER=orangepi
-			EXTRADEBS="software-properties-common zram-config ubuntu-minimal"
+			EXTRADEBS="software-properties-common ubuntu-minimal"
 			ADDPPACMD=
 			DISPTOOLCMD="apt-get -y install sunxi-disp-tool"
-		elif [ "$DISTRO" = "sid" -o "$DISTRO" = "jessie" ]; then
+		elif [ "$DISTRO" = "stretch" -o "$DISTRO" = "jessie" ]; then
+			echo -e "\e[1;31m Set Debian Configure.....\e[0m"
 			DEB=debian
 			DEBUSER=orangepi
 			EXTRADEBS="sudo"
@@ -314,8 +338,8 @@ case $DISTRO in
 export DEBIAN_FRONTEND=noninteractive
 locale-gen en_US.UTF-8
 apt-get -y update
-apt-get -y install dosfstools curl xz-utils iw rfkill wpasupplicant openssh-server alsa-utils $EXTRADEBS
-apt-get -y install vim
+apt-get -y install dosfstools curl xz-utils iw rfkill wpasupplicant usbutils openssh-server alsa-utils $EXTRADEBS
+apt-get -y install rsync u-boot-tools vim parted network-manager usbmount git autoconf gcc libtool libsysfs-dev pkg-config libdrm-dev xutils-dev hostapd dnsmasq
 apt-get -y remove --purge ureadahead
 $ADDPPACMD
 apt-get -y update
@@ -325,12 +349,40 @@ adduser --gecos root --disabled-login root --uid 0
 chown -R 1000:1000 /home/$DEBUSER
 echo "$DEBUSER:$DEBUSER" | chpasswd
 echo "root:orangepi" | chpasswd
+chown root:root /usr/bin/sudo
+chmod 4755 /usr/bin/sudo
+chown orangepi:orangepi /home/orangepi/.*
+chown root:root /home
 usermod -a -G sudo,adm,input,video,plugdev $DEBUSER
 apt-get -y autoremove
 apt-get clean
 EOF
 		chmod +x "$DEST/second-phase"
 		do_chroot /second-phase
+
+if [ $TYPE = "1" && $DISTRO="xenial" ]; then
+                cat > "$DEST/type-phase" <<EOF
+#!/bin/sh
+apt-get -y install xubuntu-desktop vlc
+apt remove snapd
+apt-get -y autoremove
+apt-get clean
+EOF
+                chmod +x "$DEST/type-phase"
+                do_chroot /type-phase
+fi
+
+if [ $TYPE = "1" && $DISTRO="jessie" ]; then
+                cat > "$DEST/type-phase" <<EOF
+#!/bin/sh
+apt-get -y install xfce4 xfce4-goodies task-xfce-desktop
+apt-get -y autoremove
+apt-get clean
+EOF
+                chmod +x "$DEST/type-phase"
+                do_chroot /type-phase
+fi
+
 		cat > "$DEST/etc/network/interfaces.d/eth0" <<EOF
 auto eth0
 iface eth0 inet dhcp
@@ -349,14 +401,16 @@ ff00::0 ip6-mcastprefix
 ff02::1 ip6-allnodes
 ff02::2 ip6-allrouters
 EOF
-		add_platform_scripts
-		add_mackeeper_service
-		add_corekeeper_service
+		#add_platform_scripts
+		#add_mackeeper_service
+		#add_corekeeper_service
+		do_conffile
 		add_ssh_keygen_service
-		add_disp_udev_rules
-		add_asound_state
+		#add_disp_udev_rules
+		#add_asound_state
 		sed -i 's|After=rc.local.service|#\0|;' "$DEST/lib/systemd/system/serial-getty@.service"
 		rm -f "$DEST/second-phase"
+		rm -f "$DEST/type-phase"
 		rm -f "$DEST/etc/resolv.conf"
 		rm -f "$DEST"/etc/ssh/ssh_host_*
 		do_chroot ln -s /run/resolvconf/resolv.conf /etc/resolv.conf
@@ -372,8 +426,8 @@ mkdir -p "$DEST/usr"
 # Create fstab
 cat <<EOF > "$DEST/etc/fstab"
 # <file system>	<dir>	<type>	<options>			<dump>	<pass>
-/dev/mmcblk0p1	/boot	vfat	defaults			0		2
-/dev/mmcblk0p2	/	ext4	defaults,noatime		0		1
+/dev/mmcblk1p1	/boot	vfat	defaults			0		2
+/dev/mmcblk1p2	/	ext4	defaults,noatime		0		1
 EOF
 
 # Clean up
