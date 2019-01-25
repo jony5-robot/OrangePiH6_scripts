@@ -191,7 +191,6 @@ if [ $OPTION = "0" -o $OPTION = "0" ]; then
         TYPE=$(whiptail --title "OrangePi Build System" \
                 --menu "$MENUSTR" 20 60 3 --cancel-button Finish --ok-button Select \
                 "0"   "Server" \
-                "1"   "Desktop" \
                 3>&1 1>&2 2>&3)
 	if [ ! -f $ROOT/output/uImage ]; then
 		export BUILD_KERNEL=1
