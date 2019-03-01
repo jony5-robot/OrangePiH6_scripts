@@ -109,9 +109,9 @@ function do_prepare()
 function do_ini_to_dts()
 {
 	local DTC_COMPILER=${KERNEL}/scripts/dtc/dtc
-	local DTC_DEP_FILE=${KERNEL}/arch/$ARCH/boot/dts/.${PACK_CHIP}-${PACK_BOARD}.dtb.d.dtc.tmp
-	local DTC_SRC_PATH=${KERNEL}/arch/$ARCH/boot/dts/
-	local DTC_SRC_FILE=${KERNEL}/arch/$ARCH/boot/dts/.${PACK_CHIP}-${PACK_BOARD}.dtb.dts.tmp
+	local DTC_DEP_FILE=${KERNEL}/arch/$ARCH/boot/dts/sunxi/.${PACK_CHIP}-${PACK_BOARD}.dtb.d.dtc.tmp
+	local DTC_SRC_PATH=${KERNEL}/arch/$ARCH/boot/dts/sunxi/
+	local DTC_SRC_FILE=${KERNEL}/arch/$ARCH/boot/dts/sunxi/.${PACK_CHIP}-${PACK_BOARD}.dtb.dts.tmp
 	local DTC_INI_FILE_BASE=${ROOT}/external/sys_config.fex
 	local DTC_INI_FILE=${ROOT}/output/sys_config_fix.fex
 	cp $DTC_INI_FILE_BASE $DTC_INI_FILE
@@ -120,8 +120,8 @@ function do_ini_to_dts()
 
 	if [ ! -f $DTC_DEP_FILE ]; then
 		printf "Script_to_dts: Can not find [%s-%s.dts]. Will use common dts file instead.\n" ${PACK_CHIP} ${PACK_BOARD}
-		DTC_DEP_FILE=${KERNEL}/arch/$ARCH/boot/dts/.${PACK_CHIP}-soc.dtb.d.dtc.tmp
-		DTC_SRC_FILE=${KERNEL}/arch/$ARCH/boot/dts/.${PACK_CHIP}-soc.dtb.dts.tmp
+		DTC_DEP_FILE=${KERNEL}/arch/$ARCH/boot/dts/sunxi/.${PACK_CHIP}-soc.dtb.d.dtc.tmp
+		DTC_SRC_FILE=${KERNEL}/arch/$ARCH/boot/dts/sunxi/.${PACK_CHIP}-soc.dtb.dts.tmp
 	fi
 
 	$DTC_COMPILER -O dtb -o ${ROOT}/output/sunxi.dtb	\
@@ -135,7 +135,7 @@ function do_ini_to_dts()
 	fi
 
 	if [ "x${PACK_PLATFORM}" = "xdragonboard" ]; then #restore the orignal dtsi
-		local DTS_PATH=${KERNEL}/arch/${ARCH}/boot/dts/
+		local DTS_PATH=${KERNEL}/arch/${ARCH}/boot/dts/sunxi/
 		if [ -f ${DTS_PATH}/${PACK_CHIP}_bak.dtsi ];then
 			rm -f ${DTS_PATH}/${PACK_CHIP}.dtsi
 			mv  ${DTS_PATH}/${PACK_CHIP}_bak.dtsi  ${DTS_PATH}/${PACK_CHIP}.dtsi
