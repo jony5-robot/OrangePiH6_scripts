@@ -16,9 +16,15 @@ else
 fi
 
 if [ -z $2 ]; then
+	PLATFORM="OnePlus"
+else
+	PLATFORM=$2
+fi
+
+if [ -z $3 ]; then
 	TYPE="server"
 else
-	TYPE=$2
+	TYPE=$3
 fi
 
 BUILD="$ROOT/external"
@@ -44,7 +50,7 @@ cp -rfa $BUILD/ap6255 $DEST/lib/firmware/
 cp -rfa $BUILD/ap6256 $DEST/lib/firmware/
 
 # Backup
-cp -rfa $DEST $OUTPUT/${DISTRO}_rootfs_$TYPE
+cp -rfa $DEST $OUTPUT/${DISTRO}_rootfs_$2_$TYPE
 
 clear
 whiptail --title "OrangePi Build System" \

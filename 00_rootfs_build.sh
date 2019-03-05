@@ -196,7 +196,7 @@ add_platform_scripts() {
 }
 
 do_conffile() {
-        cp $BUILD/sshd_config $DEST/etc/ssh/ -f
+       # cp $BUILD/sshd_config $DEST/etc/ssh/ -f
         cp $BUILD/profile $DEST/root/.profile -f
         cp $BUILD/OrangePi_install2EMMC.sh $DEST/usr/local/sbin/ -f
         cp $BUILD/resize_rootfs.sh $DEST/usr/local/sbin/ -f
@@ -338,7 +338,7 @@ case $DISTRO in
 export DEBIAN_FRONTEND=noninteractive
 locale-gen en_US.UTF-8
 apt-get -y update
-apt-get -y install dosfstools curl xz-utils iw rfkill wpasupplicant usbutils openssh-server alsa-utils $EXTRADEBS
+apt-get -y install dosfstools curl xz-utils iw rfkill wpasupplicant usbutils alsa-utils $EXTRADEBS
 apt-get -y install rsync u-boot-tools vim parted network-manager usbmount git autoconf gcc libtool libsysfs-dev pkg-config libdrm-dev xutils-dev hostapd dnsmasq
 apt-get -y remove --purge ureadahead
 $ADDPPACMD
@@ -405,14 +405,14 @@ EOF
 		#add_mackeeper_service
 		#add_corekeeper_service
 		do_conffile
-		add_ssh_keygen_service
+		#add_ssh_keygen_service
 		#add_disp_udev_rules
 		#add_asound_state
 		sed -i 's|After=rc.local.service|#\0|;' "$DEST/lib/systemd/system/serial-getty@.service"
 		rm -f "$DEST/second-phase"
 		rm -f "$DEST/type-phase"
 		rm -f "$DEST/etc/resolv.conf"
-		rm -f "$DEST"/etc/ssh/ssh_host_*
+		#rm -f "$DEST"/etc/ssh/ssh_host_*
 		do_chroot ln -s /run/resolvconf/resolv.conf /etc/resolv.conf
 		;;
 	*)
@@ -426,8 +426,8 @@ mkdir -p "$DEST/usr"
 # Create fstab
 cat <<EOF > "$DEST/etc/fstab"
 # <file system>	<dir>	<type>	<options>			<dump>	<pass>
-/dev/mmcblk1p1	/boot	vfat	defaults			0		2
-/dev/mmcblk1p2	/	ext4	defaults,noatime		0		1
+/dev/mmcblk0p1	/boot	vfat	defaults			0		2
+/dev/mmcblk0p2	/	ext4	defaults,noatime		0		1
 EOF
 
 # Clean up

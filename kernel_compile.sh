@@ -101,7 +101,7 @@ cat <<EOF > "$BUILD/uEnv.txt"
 console=tty0 console=ttyS0,115200n8 no_console_suspend
 kernel_filename=orangepi/uImage
 initrd_filename=initrd.img
-root=/dev/mmcblk1p2
+root=/dev/mmcblk0p2
 EOF
 
 	## Build initrd.img

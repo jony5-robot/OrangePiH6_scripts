@@ -227,7 +227,7 @@ if [ $OPTION = "0" -o $OPTION = "0" ]; then
 	fi
 	cd $SCRIPTS
 	DISTRO=$TMP_DISTRO
-        if [ -d $ROOT/output/${DISTRO}_rootfs_$TMP_TYPE ]; then
+        if [ -d $ROOT/output/${DISTRO}_rootfs_$PLATFORM_$TMP_TYPE ]; then
                 if (whiptail --title "OrangePi Build System" --yesno \
                         "${DISTRO} rootfs has exist! Do you want use it?" 10 60) then
                         OP_ROOTFS=0
@@ -235,7 +235,7 @@ if [ $OPTION = "0" -o $OPTION = "0" ]; then
                         OP_ROOTFS=1
                 fi
                 if [ $OP_ROOTFS = "0" ]; then
-                        sudo cp -rf $ROOT/output/${DISTRO}_rootfs_$TMP_TYPE $ROOT/output/tmp
+                        sudo cp -rf $ROOT/output/${DISTRO}_rootfs_$PLATFORM_$TMP_TYPE $ROOT/output/tmp
 			if [ -d $ROOT/output/rootfs ]; then
 				sudo rm -rf $ROOT/output/rootfs
 			fi
@@ -243,18 +243,18 @@ if [ $OPTION = "0" -o $OPTION = "0" ]; then
 			whiptail --title "OrangePi Build System" --msgbox "Rootfs has build" \
 				10 40 0	--ok-button Continue
 		else
-			sudo rm -rf $ROOT/output/${DISTRO}_rootfs_$TMP_TYPE
+			sudo rm -rf $ROOT/output/${DISTRO}_rootfs_$OLATFORM_$TMP_TYPE
 			export DISTRO=$DISTRO
 			export PLATFORM=$PLATFORM
                         sudo ./00_rootfs_build.sh $DISTRO $PLATFORM $TYPE
-                        sudo ./01_rootfs_build.sh $DISTRO $TMP_TYPE
+                        sudo ./01_rootfs_build.sh $DISTRO $PLATFORM $TMP_TYPE
 		fi
 	else
-		sudo rm -rf $ROOT/output/${DISTRO}_rootfs_$TMP_TYPE
+		sudo rm -rf $ROOT/output/${DISTRO}_rootfs_$PLATFORM_$TMP_TYPE
 		export DISTRO=$DISTRO
 		export PLATFORM=$PLATFORM
                 sudo ./00_rootfs_build.sh $DISTRO $PLATFORM $TYPE
-                sudo ./01_rootfs_build.sh $DISTRO $TMP_TYPE
+                sudo ./01_rootfs_build.sh $DISTRO $PLATFORM $TMP_TYPE
 	fi
 	if [ $TMP = "0" ]; then 
                 sudo ./build_image.sh $DISTRO $PLATFORM $TYPE
