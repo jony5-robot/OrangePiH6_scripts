@@ -164,7 +164,7 @@ fi
 
 # Extract with BSD tar
 echo -n "Extracting ... "
-set -x
+
 $UNTAR "$TARBALL" -C "$DEST"
 echo "OK"
 
@@ -202,7 +202,7 @@ do_conffile() {
         cp $BUILD/resize_rootfs.sh $DEST/usr/local/sbin/ -f
         chmod +x $DEST/usr/local/sbin/*
 	cp $BUILD/modules.conf_$PLATFORM $DEST/etc/modules-load.d/modules.conf
-        cp $BUILD/boot $DEST/opt/ -rf
+        cp $BUILD/boot_linux4.9 $DEST/opt/boot -rf
 }
 
 add_mackeeper_service() {
@@ -289,17 +289,15 @@ EOF
 add_ubuntu_apt_sources() {
 	local release="$1"
 	cat > "$DEST/etc/apt/sources.list" <<EOF
-deb http://mirrors.ustc.edu.cn/ubuntu-ports/ xenial main restricted universe multiverse
-#deb-src https://mirrors.ustc.edu.cn/ubuntu-ports/ xenial main main restricted universe multiverse
-deb http://mirrors.ustc.edu.cn/ubuntu-ports/ xenial-updates main restricted universe multiverse
-#deb-src https://mirrors.ustc.edu.cn/ubuntu-ports/ xenial-updates main restricted universe multiverse
-deb http://mirrors.ustc.edu.cn/ubuntu-ports/ xenial-backports main restricted universe multiverse
-#deb-src https://mirrors.ustc.edu.cn/ubuntu-ports/ xenial-backports main restricted universe multiverse
-deb http://mirrors.ustc.edu.cn/ubuntu-ports/ xenial-security main restricted universe multiverse
-#deb-src https://mirrors.ustc.edu.cn/ubuntu-ports/ xenial-security main restricted universe multiverse
+#deb http://mirror.yandex.ru/ubuntu-ports/ xenial main restricted universe multiverse
+#deb http://mirror.yandex.ru/ubuntu-ports/ xenial-updates main restricted universe multiverse
+#deb http://mirror.yandex.ru/ubuntu-ports/ xenial-backports main restricted universe multiverse
+#deb http://mirror.yandex.ru/ubuntu-ports/ xenial-security main restricted universe multiverse
 
-#deb http://mirrors.ustc.edu.cn/ubuntu-ports/ xenial-proposed main restricted universe multiverse
-#deb-src http://mirrors.ustc.edu.cn/ubuntu-ports/ xenial-proposed main restricted universe multiverse
+deb http://mirrors.ustc.edu.cn/ubuntu-ports/ xenial main restricted universe multiverse
+deb http://mirrors.ustc.edu.cn/ubuntu-ports/ xenial-updates main restricted universe multiverse
+deb http://mirrors.ustc.edu.cn/ubuntu-ports/ xenial-backports main restricted universe multiverse
+deb http://mirrors.ustc.edu.cn/ubuntu-ports/ xenial-security main restricted universe multiverse
 EOF
 }
 
@@ -426,8 +424,8 @@ mkdir -p "$DEST/usr"
 # Create fstab
 cat <<EOF > "$DEST/etc/fstab"
 # <file system>	<dir>	<type>	<options>			<dump>	<pass>
-/dev/mmcblk0p1	/boot	vfat	defaults			0		2
-/dev/mmcblk0p2	/	ext4	defaults,noatime		0		1
+/dev/mmcblk1p1	/boot	vfat	defaults			0		2
+/dev/mmcblk1p2	/	ext4	defaults,noatime		0		1
 EOF
 
 # Clean up
