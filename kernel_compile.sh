@@ -95,6 +95,7 @@ if [ $BUILD_KERNEL = "1" ]; then
 	mkimage -A arm -n "OrangePiH6" -O linux -T kernel -C none -a 0x40080000 -e 0x40080000 \
 		-d $LINUX/arch/arm64/boot/Image $BUILD/uImage
 
+	if [ ${PLATFORM} = "3" ]; then	
 	## Create uEnv.txt
 	echo -e "\e[1;31m Create uEnv.txt \e[0m"
 cat <<EOF > "$BUILD/uEnv.txt"
@@ -103,7 +104,17 @@ kernel_filename=orangepi/uImage
 initrd_filename=initrd.img
 root=/dev/mmcblk1p2
 EOF
-
+	else
+	## Create uEnv.txt
+	echo -e "\e[1;31m Create uEnv.txt \e[0m"
+cat <<EOF > "$BUILD/uEnv.txt"
+console=tty0 console=ttyS0,115200n8 no_console_suspend
+kernel_filename=orangepi/uImage
+initrd_filename=initrd.img
+root=/dev/mmcblk0p2
+EOF
+	fi
+	
 	## Build initrd.img
 	echo -e "\e[1;31m Build initrd.img \e[0m"
 	cp -rfa $ROOT/external/initrd.img $BUILD
